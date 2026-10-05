@@ -1,0 +1,16 @@
+# MediaMTX: забирает поток камеры один раз и раздаёт его в ANPR и в браузер.
+# Значения переопределяются переменными окружения MTX_* из docker-compose.yml / .env
+logLevel: info
+rtsp: yes
+hls: yes
+hlsVariant: lowLatency
+webrtc: yes
+webrtcLocalUDPAddress: :8189
+webrtcAdditionalHosts: []        # MTX_WEBRTCADDITIONALHOSTS=<IP хоста для браузеров>
+
+paths:
+  cam1:
+    source: publisher            # MTX_PATHS_CAM1_SOURCE=rtsp://user:pass@camera/stream
+    rtspTransport: tcp
+    sourceOnDemand: no
+  anpr:                          # сюда публикует сервис anpr (поток с разметкой)

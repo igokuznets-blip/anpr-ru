@@ -1,0 +1,10 @@
+# GPU (NVIDIA Container Toolkit):
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+services:
+  anpr:
+    environment:
+      ANPR_DEVICE: "0"
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]

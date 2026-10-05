@@ -1,0 +1,5 @@
+ultralytics>=8.3,<9
+easyocr>=1.7
+opencv-python-headless>=4.9
+pillow>=10
+numpy<2.3

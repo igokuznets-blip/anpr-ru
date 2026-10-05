@@ -1,0 +1,20 @@
+[project]
+name = "anpr-ru"
+version = "0.1.0"
+description = "Распознавание автомобильных номеров РФ в видеопотоке: YOLO + OCR + MediaMTX + веб-интерфейс"
+requires-python = ">=3.10"
+license = { text = "AGPL-3.0-or-later" }
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E701", "E702", "B008", "B905"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["plate_rules", "crnn", "app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

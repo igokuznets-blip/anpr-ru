@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ANPR — распознавание номеров</title>
+<style>
+  :root{--bg:#0f1216;--panel:#171b21;--line:#262c35;--text:#e6e9ee;--muted:#8a93a0;--accent:#3ea6ff;--ok:#2ecc71;--warn:#f5a623;--err:#e5484d}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+  header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  .stats{display:flex;gap:18px;margin-left:auto;color:var(--muted)}
+  .stats b{color:var(--text);font-variant-numeric:tabular-nums}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;padding:12px;height:calc(100vh - 49px)}
+  @media(max-width:1000px){main{grid-template-columns:1fr;height:auto}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;min-height:0}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line)}
+  select,input,button{background:#0f1216;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font:inherit}
+  button{cursor:pointer}button:hover{border-color:var(--accent)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .seg button{border:0;border-radius:0}.seg button.on{background:var(--accent);color:#000}
+  .status{display:flex;align-items:center;gap:6px;color:var(--muted);margin-left:auto}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .dot.ok{background:var(--ok)}.dot.wait{background:var(--warn)}.dot.err{background:var(--err)}
+  .video-wrap{position:relative;flex:1;min-height:300px;background:#000;border-radius:0 0 8px 8px}
+  video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .overlay-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);pointer-events:none}
+  .list{flex:1;overflow:auto}
+  .row{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+  .row:hover{background:#1d232b}
+  .row.new{animation:flash 2s ease-out}
+  @keyframes flash{from{background:rgba(62,166,255,.25)}to{background:transparent}}
+  .row img{width:96px;height:32px;object-fit:contain;border-radius:3px;background:#222}
+  .meta{color:var(--muted);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+  /* номерной знак РФ */
+  .plate{display:inline-flex;align-items:stretch;background:#fff;color:#000;border:2px solid #000;border-radius:5px;font:600 18px/1 "DejaVu Sans Mono",Consolas,monospace;letter-spacing:1px;height:30px;overflow:hidden}
+  .plate .main{padding:5px 6px;display:flex;align-items:center}
+  .plate .reg{border-left:2px solid #000;padding:1px 5px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px}
+  .plate .reg small{font-size:7px;letter-spacing:0;display:flex;align-items:center;gap:2px}
+  .flag{width:10px;height:6px;background:linear-gradient(#fff 33%,#0039a6 33% 66%,#d52b1e 66%);border:1px solid #999}
+  .empty{padding:30px;text-align:center;color:var(--muted)}
+  dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;max-width:min(900px,95vw);padding:16px}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  dialog img{max-width:100%;display:block;margin-top:10px;border-radius:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>ANPR · номера РФ</h1>
+  <div class="stats">
+    <span>За час: <b id="s-hour">–</b></span>
+    <span>Сегодня: <b id="s-today">–</b></span>
+    <span>Уникальных: <b id="s-uniq">–</b></span>
+    <span>Всего: <b id="s-total">–</b></span>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="toolbar">
+      <select id="cam"></select>
+      <div class="seg" id="layer">
+        <button data-v="anpr" class="on">С разметкой</button><button data-v="raw">Оригинал</button>
+      </div>
+      <div class="seg" id="proto">
+        <button data-v="webrtc" class="on">WebRTC</button><button data-v="hls">HLS</button>
+      </div>
+      <button id="fs" title="Полный экран">⛶</button>
+      <div class="status"><span class="dot" id="dot"></span><span id="st">—</span></div>
+    </div>
+    <div class="video-wrap">
+      <video id="video" autoplay muted playsinline></video>
+      <div class="overlay-msg" id="msg">Подключение…</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <input id="q" placeholder="Поиск: А123, 77, ?12?ВС*" style="flex:1;min-width:140px">
+      <label style="display:flex;gap:4px;align-items:center;color:var(--muted)"><input type="checkbox" id="allcams"> все камеры</label>
+      <button id="csv">CSV</button>
+      <div class="status"><span class="dot" id="sse-dot"></span></div>
+    </div>
+    <div class="list" id="list"><div class="empty">Загрузка…</div></div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span id="d-plate"></span><span id="d-meta" class="meta" style="text-align:left"></span>
+    <button style="margin-left:auto" onclick="dlg.close()">Закрыть</button>
+  </div>
+  <img id="d-car" alt="">
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const video = $('#video');
+const state = { cams: [], cam: null, layer: 'anpr', proto: 'webrtc', pc: null, hls: null, retry: null, events: new Map() };
+
+/* ---------- статус ---------- */
+function setStatus(kind, text){ $('#dot').className = 'dot ' + kind; $('#st').textContent = text;
+  $('#msg').textContent = kind === 'ok' ? '' : text; }
+
+/* ---------- плеер ---------- */
+function streamPath(){ return state.cam[state.layer]; }
+
+function stopPlayer(){
+  clearTimeout(state.retry);
+  if (state.pc){ state.pc.close(); state.pc = null; }
+  if (state.hls){ state.hls.destroy(); state.hls = null; }
+  video.srcObject = null; video.removeAttribute('src'); video.load();
+}
+
+function scheduleRetry(){ clearTimeout(state.retry); state.retry = setTimeout(startPlayer, 3000); }
+
+async function startPlayer(){
+  stopPlayer();
+  setStatus('wait', 'Подключение ' + state.proto.toUpperCase() + '…');
+  try { state.proto === 'webrtc' ? await playWebRTC() : await playHLS(); }
+  catch (e){ console.warn(e); setStatus('err', 'Нет потока: ' + e.message + ' · повтор через 3 с'); scheduleRetry(); }
+}
+
+// WebRTC через WHEP (MediaMTX: http://mediamtx:8889/<path>/whep), без trickle ICE
+async function playWebRTC(){
+  const pc = new RTCPeerConnection(); state.pc = pc;
+  pc.addTransceiver('video', { direction: 'recvonly' });
+  pc.addTransceiver('audio', { direction: 'recvonly' });
+  pc.ontrack = e => { if (!video.srcObject) video.srcObject = e.streams[0] || new MediaStream([e.track]); };
+  pc.onconnectionstatechange = () => {
+    const s = pc.connectionState;
+    if (s === 'connected') setStatus('ok', 'WebRTC · ' + streamPath());
+    if (s === 'failed' || s === 'disconnected'){ setStatus('err', 'WebRTC разорван · повтор'); scheduleRetry(); }
+  };
+  await pc.setLocalDescription(await pc.createOffer());
+  await new Promise(r => { if (pc.iceGatheringState === 'complete') return r();
+    pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && r(); setTimeout(r, 1500); });
+  const res = await fetch(`/webrtc/${streamPath()}/whep`, { method: 'POST',
+    headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp });
+  if (!res.ok) throw new Error('WHEP HTTP ' + res.status);
+  await pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
+}
+
+function loadScript(src){ return new Promise((ok, err) => { const s = document.createElement('script');
+  s.src = src; s.onload = ok; s.onerror = () => err(new Error('не загружен ' + src)); document.head.append(s); }); }
+
+async function playHLS(){
+  const url = `/hls/${streamPath()}/index.m3u8`;
+  if (video.canPlayType('application/vnd.apple.mpegurl')){ // Safari
+    video.src = url; video.onplaying = () => setStatus('ok', 'HLS · ' + streamPath());
+    video.onerror = () => { setStatus('err', 'HLS ошибка'); scheduleRetry(); }; return;
+  }
+  if (!window.Hls) await loadScript('hls.min.js');
+  const hls = new Hls({ liveSyncDurationCount: 2, lowLatencyMode: true }); state.hls = hls;
+  hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
+  hls.on(Hls.Events.FRAG_BUFFERED, () => setStatus('ok', 'HLS · ' + streamPath()));
+  hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal){ setStatus('err', 'HLS: ' + d.details); scheduleRetry(); } });
+  hls.loadSource(url); hls.attachMedia(video);
+}
+
+/* ---------- список номеров ---------- */
+function plateHTML(p){
+  return `<span class="plate"><span class="main">${p.slice(0,1)} ${p.slice(1,4)} ${p.slice(4,6)}</span>` +
+         `<span class="reg">${p.slice(6)}<small>RUS<i class="flag"></i></small></span></span>`;
+}
+const fmtTime = ts => ts.replace('T', ' ');
+const camTitle = id => (state.cams.find(c => c.id === id) || {}).title || id || '';
+
+function rowHTML(e){
+  return `<div class="row" data-id="${e.id}">
+    <img loading="lazy" src="/snaps/${e.plate_img}" onerror="this.style.visibility='hidden'" alt="">
+    <div>${plateHTML(e.plate)}</div>
+    <div class="meta">${fmtTime(e.ts).slice(11)}<br>${fmtTime(e.ts).slice(0,10)}<br>${camTitle(e.camera)}</div></div>`;
+}
+
+function filterParams(){
+  const p = new URLSearchParams({ q: $('#q').value });
+  if (!$('#allcams').checked) p.set('camera', state.cam.id);
+  return p;
+}
+
+async function loadList(){
+  const items = await (await fetch('/api/events?limit=300&' + filterParams())).json();
+  state.events = new Map(items.map(e => [e.id, e]));
+  $('#list').innerHTML = items.length ? items.map(rowHTML).join('') : '<div class="empty">Номеров пока нет</div>';
+}
+
+function matchesFilter(e){
+  if (!$('#allcams').checked && e.camera !== state.cam.id) return false;
+  const q = $('#q').value.toUpperCase().replace(/\s/g,'')
+    .replace(/[ABEKMHOPCTYX]/g, c => 'АВЕКМНОРСТУХ'['ABEKMHOPCTYX'.indexOf(c)]);
+  if (!q) return true;
+  const rx = new RegExp(q.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\?/g, '.').replace(/\*/g, '.*'));
+  return rx.test(e.plate);
+}
+
+function onEvent(e){
+  if (state.events.has(e.id) || !matchesFilter(e)) return;
+  state.events.set(e.id, e);
+  const list = $('#list'); list.querySelector('.empty')?.remove();
+  list.insertAdjacentHTML('afterbegin', rowHTML(e));
+  list.firstElementChild.classList.add('new');
+  while (list.children.length > 500) list.lastElementChild.remove();
+  loadStats();
+}
+
+function connectSSE(){
+  const es = new EventSource('/api/sse');
+  es.onopen = () => $('#sse-dot').className = 'dot ok';
+  es.onerror = () => $('#sse-dot').className = 'dot err';     // EventSource переподключается сам
+  es.addEventListener('plate', m => onEvent(JSON.parse(m.data)));
+}
+
+async function loadStats(){
+  const s = await (await fetch('/api/stats')).json();
+  $('#s-hour').textContent = s.last_hour; $('#s-today').textContent = s.today;
+  $('#s-uniq').textContent = s.unique_today; $('#s-total').textContent = s.total;
+}
+
+/* ---------- UI ---------- */
+function seg(id, key){
+  $(id).addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return;
+    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    state[key] = b.dataset.v; startPlayer(); });
+}
+seg('#layer', 'layer'); seg('#proto', 'proto');
+$('#fs').onclick = () => video.requestFullscreen?.();
+$('#cam').onchange = () => { state.cam = state.cams.find(c => c.id === $('#cam').value); startPlayer(); loadList(); };
+let qTimer; $('#q').oninput = () => { clearTimeout(qTimer); qTimer = setTimeout(loadList, 250); };
+$('#allcams').onchange = loadList;
+$('#csv').onclick = () => location.href = '/api/events.csv?' + filterParams();
+$('#list').onclick = ev => {
+  const r = ev.target.closest('.row'); if (!r) return; const e = state.events.get(r.dataset.id);
+  $('#d-plate').innerHTML = plateHTML(e.plate);
+  $('#d-meta').innerHTML = `${fmtTime(e.ts)} · ${camTitle(e.camera)} · трек #${e.track} · голосов ${e.votes}`;
+  $('#d-car').src = '/snaps/' + e.car_img; $('#dlg').showModal();
+};
+
+(async () => {
+  state.cams = (await (await fetch('/api/config')).json()).cameras;
+  $('#cam').innerHTML = state.cams.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+  state.cam = state.cams[0];
+  startPlayer(); loadList(); loadStats(); connectSSE();
+  setInterval(loadStats, 30000);
+})();
+</script>
+</body>
+</html>

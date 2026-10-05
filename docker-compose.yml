@@ -1,0 +1,59 @@
+name: anpr-ru
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1
+    volumes: ["./mediamtx.yml:/mediamtx.yml:ro"]
+    environment:
+      MTX_PATHS_CAM1_SOURCE: ${CAM1_URL:-publisher}
+      MTX_WEBRTCADDITIONALHOSTS: ${WEBRTC_HOST:-127.0.0.1}
+    ports:
+      - "${RTSP_PORT:-8554}:8554"
+      - "8189:8189/udp"
+    restart: unless-stopped
+
+  anpr:
+    build: ./anpr
+    image: ${IMAGE_PREFIX:-anpr-ru}/anpr:${TAG:-latest}
+    depends_on: [mediamtx]
+    volumes: ["./models:/app/models:ro", "./data:/app/data"]
+    environment:
+      ANPR_SOURCE: rtsp://mediamtx:8554/cam1
+      ANPR_OUT: rtsp://mediamtx:8554/anpr
+      ANPR_CAMERA: cam1
+      ANPR_PLATE_MODEL: /app/models/plate.pt
+      ANPR_CRNN_MODEL: /app/models/crnn.pt
+      ANPR_OCR: ${ANPR_OCR:-easyocr}
+      ANPR_DEVICE: ${ANPR_DEVICE:-cpu}
+      ANPR_FPS: ${ANPR_FPS:-15}
+      ANPR_MIN_VOTES: ${ANPR_MIN_VOTES:-3}
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    image: ${IMAGE_PREFIX:-anpr-ru}/web:${TAG:-latest}
+    volumes: ["./data:/data:ro"]
+    environment:
+      EVENTS_FILE: /data/events.jsonl
+      SNAPS_DIR: /data/snaps
+      CAMERAS: '[{"id":"cam1","title":"${CAM1_TITLE:-Камера 1}","raw":"cam1","anpr":"anpr"}]'
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on: [web, mediamtx]
+    volumes: ["./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+    ports: ["${HTTP_PORT:-8080}:80"]
+    restart: unless-stopped
+
+  # Демо без камеры: крутит samples/demo.mp4 в rtsp://mediamtx:8554/cam1
+  # docker compose --profile demo up -d
+  demo:
+    profiles: [demo]
+    image: linuxserver/ffmpeg:latest
+    depends_on: [mediamtx]
+    volumes: ["./samples:/samples:ro"]
+    command: >
+      -re -stream_loop -1 -i /samples/demo.mp4 -an -c:v libx264 -preset veryfast
+      -tune zerolatency -g 30 -f rtsp -rtsp_transport tcp rtsp://mediamtx:8554/cam1
+    restart: unless-stopped
