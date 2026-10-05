@@ -1,10 +1,11 @@
+# Сборка из корня репозитория: docker build -f web/Dockerfile .
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
-COPY requirements.txt .
+COPY web/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py .
-COPY static ./static
+COPY web/app.py common/cameras.py ./
+COPY web/static ./static
 # hls.js кладём локально — интерфейс работает без интернета
 ADD https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js ./static/hls.min.js
 RUN chmod 644 ./static/hls.min.js

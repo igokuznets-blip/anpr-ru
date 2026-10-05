@@ -1,11 +1,24 @@
 name: anpr-ru
 
+# Камеры описываются в cameras.yml (cp cameras.example.yml cameras.yml).
+# Масштабирование на несколько GPU/хостов — см. docker-compose.shards.example.yml
+
+x-anpr: &anpr
+  build: {context: ., dockerfile: anpr/Dockerfile}
+  image: ${IMAGE_PREFIX:-anpr-ru}/anpr:${TAG:-latest}
+  depends_on: [mediamtx]
+  env_file: [{path: .env, required: false}]
+  volumes:
+    - ./models:/app/models:ro
+    - ./data:/app/data
+    - ./cameras.yml:/config/cameras.yml:ro
+  restart: unless-stopped
+
 services:
   mediamtx:
     image: bluenviron/mediamtx:1
     volumes: ["./mediamtx.yml:/mediamtx.yml:ro"]
     environment:
-      MTX_PATHS_CAM1_SOURCE: ${CAM1_URL:-publisher}
       MTX_WEBRTCADDITIONALHOSTS: ${WEBRTC_HOST:-127.0.0.1}
     ports:
       - "${RTSP_PORT:-8554}:8554"
@@ -13,30 +26,34 @@ services:
     restart: unless-stopped
 
   anpr:
-    build: ./anpr
-    image: ${IMAGE_PREFIX:-anpr-ru}/anpr:${TAG:-latest}
-    depends_on: [mediamtx]
-    volumes: ["./models:/app/models:ro", "./data:/app/data"]
-    environment:
-      ANPR_SOURCE: rtsp://mediamtx:8554/cam1
-      ANPR_OUT: rtsp://mediamtx:8554/anpr
-      ANPR_CAMERA: cam1
+    <<: *anpr
+    environment: &anpr-env
+      ANPR_CAMERAS_FILE: /config/cameras.yml
+      ANPR_ONLY: ${ANPR_ONLY:-}                  # пусто = все включённые камеры
+      ANPR_SHARD: main
+      ANPR_SOURCE_TEMPLATE: rtsp://mediamtx:8554/{id}
+      ANPR_OUT_TEMPLATE: rtsp://mediamtx:8554/{id}_anpr
       ANPR_PLATE_MODEL: /app/models/plate.pt
       ANPR_CRNN_MODEL: /app/models/crnn.pt
       ANPR_OCR: ${ANPR_OCR:-easyocr}
       ANPR_DEVICE: ${ANPR_DEVICE:-cpu}
       ANPR_FPS: ${ANPR_FPS:-15}
       ANPR_MIN_VOTES: ${ANPR_MIN_VOTES:-3}
-    restart: unless-stopped
 
   web:
-    build: ./web
+    build: {context: ., dockerfile: web/Dockerfile}
     image: ${IMAGE_PREFIX:-anpr-ru}/web:${TAG:-latest}
-    volumes: ["./data:/data:ro"]
+    depends_on: [mediamtx]
+    env_file: [{path: .env, required: false}]   # для ${CAMx_URL} в cameras.yml
+    volumes:
+      - ./data:/data:ro
+      - ./cameras.yml:/config/cameras.yml:ro
     environment:
+      CAMERAS_FILE: /config/cameras.yml
       EVENTS_FILE: /data/events.jsonl
       SNAPS_DIR: /data/snaps
-      CAMERAS: '[{"id":"cam1","title":"${CAM1_TITLE:-Камера 1}","raw":"cam1","anpr":"anpr"}]'
+      STATUS_GLOB: /data/status-*.json
+      MEDIAMTX_API: http://mediamtx:9997
     restart: unless-stopped
 
   nginx:
@@ -46,7 +63,7 @@ services:
     ports: ["${HTTP_PORT:-8080}:80"]
     restart: unless-stopped
 
-  # Демо без камеры: крутит samples/demo.mp4 в rtsp://mediamtx:8554/cam1
+  # Демо без камеры: крутит samples/demo.mp4 в rtsp://mediamtx:8554/cam1 (у cam1 должен быть url: publisher)
   # docker compose --profile demo up -d
   demo:
     profiles: [demo]

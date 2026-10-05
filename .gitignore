@@ -1,5 +1,7 @@
 # Секреты
 .env
+cameras.yml
+docker-compose.shards.yml
 # Данные и модели (большие файлы — не в git)
 data/*
 !data/.gitkeep

@@ -1,0 +1,32 @@
+# Скопируйте в cameras.yml (не коммитится — там адреса и пароли камер):
+#   cp cameras.example.yml cameras.yml
+#
+# Для каждой камеры автоматически создаются пути MediaMTX:
+#   rtsp://<хост>:8554/<id>        — исходный поток
+#   rtsp://<хост>:8554/<id>_anpr   — поток с разметкой
+# Добавление/удаление камер в веб-интерфейсе и MediaMTX подхватывается без перезапуска,
+# сервис anpr нужно перезапустить: docker compose restart anpr
+
+defaults:
+  fps: 15                 # FPS выходного потока с разметкой
+  min_votes: 3            # одинаковых чтений для подтверждения номера
+  min_vehicle_width: 80   # px, меньше — не распознаём (слишком далеко)
+
+cameras:
+  - id: cam1
+    title: Въезд КПП-1
+    url: ${CAM1_URL:-publisher}     # без CAM1_URL поток ждёт публикации (make demo)
+    # Зона распознавания: полигон в долях кадра (x, y), 0..1. Без roi — весь кадр.
+    roi: [[0.05, 0.35], [0.95, 0.35], [0.95, 1.0], [0.05, 1.0]]
+
+  - id: cam2
+    title: Выезд КПП-1
+    url: ${CAM2_URL:-rtsp://user:password@192.168.1.11:554/stream1}
+    enabled: false                  # включите, когда камера будет доступна
+
+  - id: parking
+    title: Парковка, шлагбаум
+    url: rtsp://user:password@192.168.1.12:554/Streaming/Channels/101
+    enabled: false
+    fps: 10
+    min_vehicle_width: 120

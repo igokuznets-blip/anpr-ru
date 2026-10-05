@@ -1,16 +1,32 @@
-# MediaMTX: забирает поток камеры один раз и раздаёт его в ANPR и в браузер.
-# Значения переопределяются переменными окружения MTX_* из docker-compose.yml / .env
+# MediaMTX: забирает потоки камер один раз и раздаёт их в ANPR и в браузер.
+# Пути камер (<id>) создаёт сервис web через Control API по cameras.yml — здесь их описывать не нужно.
+# Потоки с разметкой (<id>_anpr) публикует сервис anpr и принимаются через all_others.
 logLevel: info
+
+api: yes
+apiAddress: :9997            # только внутри docker-сети, наружу не публикуется
+metrics: yes
+metricsAddress: :9998        # Prometheus: http://mediamtx:9998/metrics
+
 rtsp: yes
 hls: yes
 hlsVariant: lowLatency
 webrtc: yes
 webrtcLocalUDPAddress: :8189
-webrtcAdditionalHosts: []        # MTX_WEBRTCADDITIONALHOSTS=<IP хоста для браузеров>
+webrtcAdditionalHosts: []    # MTX_WEBRTCADDITIONALHOSTS=<IP хоста для браузеров>
+
+authInternalUsers:
+  - user: any
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+  # API и метрики — только из приватных сетей (docker); порты 9997/9998 наружу не открыты
+  - user: any
+    ips: ["127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+    permissions:
+      - action: api
+      - action: metrics
 
 paths:
-  cam1:
-    source: publisher            # MTX_PATHS_CAM1_SOURCE=rtsp://user:pass@camera/stream
-    rtspTransport: tcp
-    sourceOnDemand: no
-  anpr:                          # сюда публикует сервис anpr (поток с разметкой)
+  all_others:

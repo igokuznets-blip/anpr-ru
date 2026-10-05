@@ -24,7 +24,7 @@ jobs:
       - run: ruff check .
       - run: python -m pytest -q
       - name: Проверка docker-compose
-        run: cp .env.example .env && docker compose config -q
+        run: cp .env.example .env && cp cameras.example.yml cameras.yml && docker compose config -q && python -c "import sys; sys.path.insert(0, 'common'); from cameras import load_cameras; print(load_cameras('cameras.example.yml', include_disabled=True))"
 
   docker:
     needs: test
@@ -54,7 +54,8 @@ jobs:
             type=sha,prefix=
       - uses: docker/build-push-action@v6
         with:
-          context: ./${{ matrix.service }}
+          context: .
+          file: ./${{ matrix.service }}/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,7 +1,13 @@
 **/__pycache__
 **/*.pyc
 .git
+.github
 .env
+cameras.yml
 data
 datasets
 runs
+models
+samples
+docs
+tests

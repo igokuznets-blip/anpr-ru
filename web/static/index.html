@@ -8,9 +8,9 @@
   :root{--bg:#0f1216;--panel:#171b21;--line:#262c35;--text:#e6e9ee;--muted:#8a93a0;--accent:#3ea6ff;--ok:#2ecc71;--warn:#f5a623;--err:#e5484d}
   *{box-sizing:border-box}
   body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
-  header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header{display:flex;align-items:center;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
   header h1{font-size:16px;margin:0;font-weight:600}
-  .stats{display:flex;gap:18px;margin-left:auto;color:var(--muted)}
+  .stats{display:flex;gap:18px;margin-left:auto;color:var(--muted);flex-wrap:wrap}
   .stats b{color:var(--text);font-variant-numeric:tabular-nums}
   main{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;padding:12px;height:calc(100vh - 49px)}
   @media(max-width:1000px){main{grid-template-columns:1fr;height:auto}}
@@ -20,12 +20,28 @@
   button{cursor:pointer}button:hover{border-color:var(--accent)}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
   .seg button{border:0;border-radius:0}.seg button.on{background:var(--accent);color:#000}
-  .status{display:flex;align-items:center;gap:6px;color:var(--muted);margin-left:auto}
-  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .status{display:flex;align-items:center;gap:6px;color:var(--muted);margin-left:auto;font-size:13px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
   .dot.ok{background:var(--ok)}.dot.wait{background:var(--warn)}.dot.err{background:var(--err)}
-  .video-wrap{position:relative;flex:1;min-height:300px;background:#000;border-radius:0 0 8px 8px}
-  video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
-  .overlay-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);pointer-events:none}
+  .hidden{display:none!important}
+
+  /* видео */
+  .stage{position:relative;flex:1;min-height:300px;background:#000;border-radius:0 0 8px 8px;overflow:hidden}
+  .tile{position:relative;background:#000;overflow:hidden}
+  .tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .tile .msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);pointer-events:none;text-align:center;padding:10px}
+  .tile .cap{position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:6px 8px;
+             background:linear-gradient(rgba(0,0,0,.75),transparent);font-size:13px;pointer-events:none}
+  .tile .cap .fps{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+  .single{position:absolute;inset:0}
+  .single .cap{display:none}
+  .grid{position:absolute;inset:0;display:grid;gap:2px;background:var(--line)}
+  .grid .tile{cursor:pointer}
+  .grid .tile:hover{outline:2px solid var(--accent);outline-offset:-2px;z-index:1}
+  .grid .tile.flash{animation:tflash 1.5s ease-out}
+  @keyframes tflash{from{box-shadow:inset 0 0 0 4px var(--ok)}to{box-shadow:inset 0 0 0 0 transparent}}
+
+  /* список */
   .list{flex:1;overflow:auto}
   .row{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer}
   .row:hover{background:#1d232b}
@@ -33,13 +49,22 @@
   @keyframes flash{from{background:rgba(62,166,255,.25)}to{background:transparent}}
   .row img{width:96px;height:32px;object-fit:contain;border-radius:3px;background:#222}
   .meta{color:var(--muted);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
-  /* номерной знак РФ */
   .plate{display:inline-flex;align-items:stretch;background:#fff;color:#000;border:2px solid #000;border-radius:5px;font:600 18px/1 "DejaVu Sans Mono",Consolas,monospace;letter-spacing:1px;height:30px;overflow:hidden}
   .plate .main{padding:5px 6px;display:flex;align-items:center}
   .plate .reg{border-left:2px solid #000;padding:1px 5px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px}
   .plate .reg small{font-size:7px;letter-spacing:0;display:flex;align-items:center;gap:2px}
   .flag{width:10px;height:6px;background:linear-gradient(#fff 33%,#0039a6 33% 66%,#d52b1e 66%);border:1px solid #999}
   .empty{padding:30px;text-align:center;color:var(--muted)}
+  .banner{background:rgba(229,72,77,.15);border-bottom:1px solid var(--err);padding:6px 12px;color:#ffb4b6;font-size:13px}
+
+  /* камеры */
+  .cams{border-top:1px solid var(--line);max-height:30%;overflow:auto}
+  .cams table{width:100%;border-collapse:collapse;font-size:12px}
+  .cams td,.cams th{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+  .cams th{color:var(--muted);font-weight:500;position:sticky;top:0;background:var(--panel)}
+  .cams tr{cursor:pointer}.cams tbody tr:hover{background:#1d232b}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+
   dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;max-width:min(900px,95vw);padding:16px}
   dialog::backdrop{background:rgba(0,0,0,.6)}
   dialog img{max-width:100%;display:block;margin-top:10px;border-radius:6px}
@@ -48,6 +73,7 @@
 <body>
 <header>
   <h1>ANPR · номера РФ</h1>
+  <span class="status" style="margin-left:0"><span class="dot" id="cams-dot"></span><span id="cams-sum">—</span></span>
   <div class="stats">
     <span>За час: <b id="s-hour">–</b></span>
     <span>Сегодня: <b id="s-today">–</b></span>
@@ -55,11 +81,15 @@
     <span>Всего: <b id="s-total">–</b></span>
   </div>
 </header>
+<div class="banner hidden" id="cfg-err"></div>
 
 <main>
   <section class="panel">
     <div class="toolbar">
-      <select id="cam"></select>
+      <div class="seg" id="view">
+        <button data-v="single" class="on">Одна</button><button data-v="grid">Сетка</button>
+      </div>
+      <select id="cam" title="Камера"></select>
       <div class="seg" id="layer">
         <button data-v="anpr" class="on">С разметкой</button><button data-v="raw">Оригинал</button>
       </div>
@@ -69,18 +99,26 @@
       <button id="fs" title="Полный экран">⛶</button>
       <div class="status"><span class="dot" id="dot"></span><span id="st">—</span></div>
     </div>
-    <div class="video-wrap">
-      <video id="video" autoplay muted playsinline></video>
-      <div class="overlay-msg" id="msg">Подключение…</div>
+    <div class="stage" id="stage">
+      <div class="tile single" id="single">
+        <video autoplay muted playsinline></video><div class="msg">Подключение…</div>
+      </div>
+      <div class="grid hidden" id="grid"></div>
+    </div>
+    <div class="cams">
+      <table>
+        <thead><tr><th>Камера</th><th>Источник</th><th>ANPR</th><th class="num">FPS</th><th class="num">Номеров сегодня</th><th>Экземпляр</th></tr></thead>
+        <tbody id="cams-body"></tbody>
+      </table>
     </div>
   </section>
 
   <section class="panel">
     <div class="toolbar">
       <input id="q" placeholder="Поиск: А123, 77, ?12?ВС*" style="flex:1;min-width:140px">
-      <label style="display:flex;gap:4px;align-items:center;color:var(--muted)"><input type="checkbox" id="allcams"> все камеры</label>
+      <select id="camfilter" title="Фильтр по камере"></select>
       <button id="csv">CSV</button>
-      <div class="status"><span class="dot" id="sse-dot"></span></div>
+      <div class="status"><span class="dot" id="sse-dot" title="Live-обновления"></span></div>
     </div>
     <div class="list" id="list"><div class="empty">Загрузка…</div></div>
   </section>
@@ -96,87 +134,164 @@
 
 <script>
 const $ = s => document.querySelector(s);
-const video = $('#video');
-const state = { cams: [], cam: null, layer: 'anpr', proto: 'webrtc', pc: null, hls: null, retry: null, events: new Map() };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const state = { cams: [], camStatus: {}, view: 'single', cam: null, layer: 'anpr', proto: 'webrtc',
+                players: [], events: new Map(), todayByCam: {} };
 
-/* ---------- статус ---------- */
-function setStatus(kind, text){ $('#dot').className = 'dot ' + kind; $('#st').textContent = text;
-  $('#msg').textContent = kind === 'ok' ? '' : text; }
+/* ---------- плеер (WebRTC WHEP / HLS) ---------- */
+let hlsLoading = null;
+function loadHls(){ return hlsLoading ??= new Promise((ok, err) => { const s = document.createElement('script');
+  s.src = 'hls.min.js'; s.onload = ok; s.onerror = () => err(new Error('hls.js не загружен')); document.head.append(s); }); }
 
-/* ---------- плеер ---------- */
-function streamPath(){ return state.cam[state.layer]; }
+class Player {
+  constructor(tile, onStatus){ this.tile = tile; this.video = tile.querySelector('video');
+    this.msg = tile.querySelector('.msg'); this.onStatus = onStatus || (() => {}); this.gen = 0; }
 
-function stopPlayer(){
-  clearTimeout(state.retry);
-  if (state.pc){ state.pc.close(); state.pc = null; }
-  if (state.hls){ state.hls.destroy(); state.hls = null; }
-  video.srcObject = null; video.removeAttribute('src'); video.load();
-}
+  status(kind, text){ this.msg.textContent = kind === 'ok' ? '' : text; this.onStatus(kind, text); }
 
-function scheduleRetry(){ clearTimeout(state.retry); state.retry = setTimeout(startPlayer, 3000); }
-
-async function startPlayer(){
-  stopPlayer();
-  setStatus('wait', 'Подключение ' + state.proto.toUpperCase() + '…');
-  try { state.proto === 'webrtc' ? await playWebRTC() : await playHLS(); }
-  catch (e){ console.warn(e); setStatus('err', 'Нет потока: ' + e.message + ' · повтор через 3 с'); scheduleRetry(); }
-}
-
-// WebRTC через WHEP (MediaMTX: http://mediamtx:8889/<path>/whep), без trickle ICE
-async function playWebRTC(){
-  const pc = new RTCPeerConnection(); state.pc = pc;
-  pc.addTransceiver('video', { direction: 'recvonly' });
-  pc.addTransceiver('audio', { direction: 'recvonly' });
-  pc.ontrack = e => { if (!video.srcObject) video.srcObject = e.streams[0] || new MediaStream([e.track]); };
-  pc.onconnectionstatechange = () => {
-    const s = pc.connectionState;
-    if (s === 'connected') setStatus('ok', 'WebRTC · ' + streamPath());
-    if (s === 'failed' || s === 'disconnected'){ setStatus('err', 'WebRTC разорван · повтор'); scheduleRetry(); }
-  };
-  await pc.setLocalDescription(await pc.createOffer());
-  await new Promise(r => { if (pc.iceGatheringState === 'complete') return r();
-    pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && r(); setTimeout(r, 1500); });
-  const res = await fetch(`/webrtc/${streamPath()}/whep`, { method: 'POST',
-    headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp });
-  if (!res.ok) throw new Error('WHEP HTTP ' + res.status);
-  await pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
-}
-
-function loadScript(src){ return new Promise((ok, err) => { const s = document.createElement('script');
-  s.src = src; s.onload = ok; s.onerror = () => err(new Error('не загружен ' + src)); document.head.append(s); }); }
-
-async function playHLS(){
-  const url = `/hls/${streamPath()}/index.m3u8`;
-  if (video.canPlayType('application/vnd.apple.mpegurl')){ // Safari
-    video.src = url; video.onplaying = () => setStatus('ok', 'HLS · ' + streamPath());
-    video.onerror = () => { setStatus('err', 'HLS ошибка'); scheduleRetry(); }; return;
+  stop(){
+    this.gen++; clearTimeout(this.retry);
+    if (this.pc){ this.pc.close(); this.pc = null; }
+    if (this.session){ fetch(this.session, { method: 'DELETE' }).catch(() => {}); this.session = null; }
+    if (this.hls){ this.hls.destroy(); this.hls = null; }
+    this.video.srcObject = null; this.video.removeAttribute('src'); this.video.load();
   }
-  if (!window.Hls) await loadScript('hls.min.js');
-  const hls = new Hls({ liveSyncDurationCount: 2, lowLatencyMode: true }); state.hls = hls;
-  hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
-  hls.on(Hls.Events.FRAG_BUFFERED, () => setStatus('ok', 'HLS · ' + streamPath()));
-  hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal){ setStatus('err', 'HLS: ' + d.details); scheduleRetry(); } });
-  hls.loadSource(url); hls.attachMedia(video);
+
+  async play(path, proto){
+    this.stop(); this.path = path; this.proto = proto; const gen = this.gen;
+    this.status('wait', 'Подключение ' + proto.toUpperCase() + '…');
+    try { proto === 'webrtc' ? await this.webrtc(gen) : await this.hlsPlay(gen); }
+    catch (e){ if (gen === this.gen){ this.status('err', 'Нет потока: ' + e.message); this.again(gen); } }
+  }
+
+  again(gen){ clearTimeout(this.retry); this.retry = setTimeout(() => gen === this.gen && this.play(this.path, this.proto), 3000); }
+
+  async webrtc(gen){
+    const pc = new RTCPeerConnection(); this.pc = pc;
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.addTransceiver('audio', { direction: 'recvonly' });
+    pc.ontrack = e => { if (!this.video.srcObject) this.video.srcObject = e.streams[0] || new MediaStream([e.track]); };
+    pc.onconnectionstatechange = () => {
+      if (gen !== this.gen) return;
+      const s = pc.connectionState;
+      if (s === 'connected') this.status('ok', 'WebRTC · ' + this.path);
+      if (s === 'failed' || s === 'disconnected'){ this.status('err', 'WebRTC разорван'); this.again(gen); }
+    };
+    await pc.setLocalDescription(await pc.createOffer());
+    await new Promise(r => { if (pc.iceGatheringState === 'complete') return r();
+      pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && r(); setTimeout(r, 1500); });
+    const res = await fetch(`/webrtc/${this.path}/whep`, { method: 'POST',
+      headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp });
+    if (!res.ok) throw new Error(res.status === 404 ? 'поток не опубликован' : 'WHEP HTTP ' + res.status);
+    const loc = res.headers.get('Location');
+    if (loc) this.session = new URL(loc, location.origin + `/webrtc/${this.path}/whep`).pathname;
+    if (gen !== this.gen) return;
+    await pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
+  }
+
+  async hlsPlay(gen){
+    const url = `/hls/${this.path}/index.m3u8`, v = this.video;
+    if (v.canPlayType('application/vnd.apple.mpegurl')){
+      v.src = url; v.onplaying = () => this.status('ok', 'HLS · ' + this.path);
+      v.onerror = () => { this.status('err', 'HLS ошибка'); this.again(gen); }; return;
+    }
+    await loadHls(); if (gen !== this.gen) return;
+    const hls = new Hls({ liveSyncDurationCount: 2, lowLatencyMode: true }); this.hls = hls;
+    hls.on(Hls.Events.MANIFEST_PARSED, () => v.play().catch(() => {}));
+    hls.on(Hls.Events.FRAG_BUFFERED, () => this.status('ok', 'HLS · ' + this.path));
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal){ this.status('err', 'HLS: ' + d.details); this.again(gen); } });
+    hls.loadSource(url); hls.attachMedia(v);
+  }
+}
+
+const mainPlayer = new Player($('#single'), (k, t) => { $('#dot').className = 'dot ' + k; $('#st').textContent = t; });
+
+function stopGrid(){ state.players.forEach(p => p.stop()); state.players = []; }
+
+function gridCols(n){ return n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4; }
+
+function render(){
+  const single = state.view === 'single';
+  $('#single').classList.toggle('hidden', !single); $('#grid').classList.toggle('hidden', single);
+  $('#cam').classList.toggle('hidden', !single);
+  if (single){
+    stopGrid();
+    if (state.cam) mainPlayer.play(state.cam[state.layer], state.proto);
+    return;
+  }
+  mainPlayer.stop();
+  $('#dot').className = 'dot'; $('#st').textContent = `Сетка · камер: ${state.cams.length}`;
+  stopGrid();
+  const g = $('#grid'), n = state.cams.length, c = gridCols(n);
+  g.style.gridTemplateColumns = `repeat(${c}, 1fr)`; g.style.gridTemplateRows = `repeat(${Math.ceil(n / c) || 1}, 1fr)`;
+  g.innerHTML = state.cams.map(cam => `<div class="tile" data-cam="${esc(cam.id)}">
+      <video autoplay muted playsinline></video><div class="msg">Подключение…</div>
+      <div class="cap"><span class="dot" data-dot="${esc(cam.id)}"></span><b>${esc(cam.title)}</b>
+      <span class="fps" data-fps="${esc(cam.id)}"></span></div></div>`).join('')
+    || '<div class="empty">Камер нет — добавьте их в cameras.yml</div>';
+  state.players = [...g.querySelectorAll('.tile')].map((t, i) => {
+    const p = new Player(t); p.play(state.cams[i][state.layer], state.proto); return p; });
+  paintCamStatus();
+}
+
+function selectCam(id){
+  state.cam = state.cams.find(c => c.id === id) || state.cams[0];
+  $('#cam').value = state.cam?.id || '';
+  setSeg('#view', 'single'); state.view = 'single'; render();
+}
+
+/* ---------- состояние камер ---------- */
+function camDot(c){
+  if (!c) return ['', 'нет данных'];
+  if (c.processing.error) return ['err', 'ошибка: ' + c.processing.error];
+  if (c.processing.working && c.output.ready !== false) return ['ok', 'работает'];
+  if (c.source.ready === false) return ['err', 'нет сигнала'];
+  if (c.processing.connected === false) return ['err', 'нет сигнала'];
+  return ['wait', c.processing.shard ? 'запуск…' : 'не обрабатывается'];
+}
+
+async function loadCamStatus(){
+  try {
+    const list = await (await fetch('/api/cameras')).json();
+    state.camStatus = Object.fromEntries(list.map(c => [c.id, c]));
+  } catch { state.camStatus = {}; }
+  paintCamStatus();
+}
+
+function paintCamStatus(){
+  let ok = 0;
+  $('#cams-body').innerHTML = state.cams.map(cam => {
+    const c = state.camStatus[cam.id], [k, t] = camDot(c); if (k === 'ok') ok++;
+    const src = c?.source.ready == null ? '—' : c.source.ready ? 'есть' : 'нет';
+    return `<tr data-cam="${esc(cam.id)}"><td><span class="dot ${k}"></span> ${esc(cam.title)}</td>
+      <td>${src}</td><td>${esc(t)}</td><td class="num">${c?.processing.fps ?? '–'}</td>
+      <td class="num">${state.todayByCam[cam.id] ?? 0}</td><td>${esc(c?.processing.shard ?? '–')}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="empty">Нет включённых камер</td></tr>';
+  $('#cams-sum').textContent = `камер: ${ok} / ${state.cams.length} в работе`;
+  $('#cams-dot').className = 'dot ' + (state.cams.length && ok === state.cams.length ? 'ok' : ok ? 'wait' : 'err');
+  document.querySelectorAll('[data-dot]').forEach(d => d.className = 'dot ' + camDot(state.camStatus[d.dataset.dot])[0]);
+  document.querySelectorAll('[data-fps]').forEach(d => { const f = state.camStatus[d.dataset.fps]?.processing.fps;
+    d.textContent = f != null ? f + ' FPS' : ''; });
 }
 
 /* ---------- список номеров ---------- */
 function plateHTML(p){
-  return `<span class="plate"><span class="main">${p.slice(0,1)} ${p.slice(1,4)} ${p.slice(4,6)}</span>` +
-         `<span class="reg">${p.slice(6)}<small>RUS<i class="flag"></i></small></span></span>`;
+  return `<span class="plate"><span class="main">${esc(p.slice(0,1))} ${esc(p.slice(1,4))} ${esc(p.slice(4,6))}</span>` +
+         `<span class="reg">${esc(p.slice(6))}<small>RUS<i class="flag"></i></small></span></span>`;
 }
 const fmtTime = ts => ts.replace('T', ' ');
 const camTitle = id => (state.cams.find(c => c.id === id) || {}).title || id || '';
 
 function rowHTML(e){
-  return `<div class="row" data-id="${e.id}">
-    <img loading="lazy" src="/snaps/${e.plate_img}" onerror="this.style.visibility='hidden'" alt="">
+  return `<div class="row" data-id="${esc(e.id)}">
+    <img loading="lazy" src="/snaps/${encodeURIComponent(e.plate_img)}" onerror="this.style.visibility='hidden'" alt="">
     <div>${plateHTML(e.plate)}</div>
-    <div class="meta">${fmtTime(e.ts).slice(11)}<br>${fmtTime(e.ts).slice(0,10)}<br>${camTitle(e.camera)}</div></div>`;
+    <div class="meta">${fmtTime(e.ts).slice(11)}<br>${fmtTime(e.ts).slice(0,10)}<br>${esc(camTitle(e.camera))}</div></div>`;
 }
 
 function filterParams(){
   const p = new URLSearchParams({ q: $('#q').value });
-  if (!$('#allcams').checked) p.set('camera', state.cam.id);
+  if ($('#camfilter').value) p.set('camera', $('#camfilter').value);
   return p;
 }
 
@@ -187,62 +302,88 @@ async function loadList(){
 }
 
 function matchesFilter(e){
-  if (!$('#allcams').checked && e.camera !== state.cam.id) return false;
+  const f = $('#camfilter').value; if (f && e.camera !== f) return false;
   const q = $('#q').value.toUpperCase().replace(/\s/g,'')
     .replace(/[ABEKMHOPCTYX]/g, c => 'АВЕКМНОРСТУХ'['ABEKMHOPCTYX'.indexOf(c)]);
   if (!q) return true;
-  const rx = new RegExp(q.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\?/g, '.').replace(/\*/g, '.*'));
-  return rx.test(e.plate);
+  return new RegExp(q.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\?/g, '.').replace(/\*/g, '.*')).test(e.plate);
 }
 
 function onEvent(e){
+  state.todayByCam[e.camera] = (state.todayByCam[e.camera] || 0) + 1;
+  const tile = document.querySelector(`#grid .tile[data-cam="${CSS.escape(e.camera)}"]`);
+  if (tile){ tile.classList.remove('flash'); void tile.offsetWidth; tile.classList.add('flash'); }
+  loadStats();
   if (state.events.has(e.id) || !matchesFilter(e)) return;
   state.events.set(e.id, e);
   const list = $('#list'); list.querySelector('.empty')?.remove();
   list.insertAdjacentHTML('afterbegin', rowHTML(e));
   list.firstElementChild.classList.add('new');
   while (list.children.length > 500) list.lastElementChild.remove();
-  loadStats();
 }
 
 function connectSSE(){
   const es = new EventSource('/api/sse');
   es.onopen = () => $('#sse-dot').className = 'dot ok';
-  es.onerror = () => $('#sse-dot').className = 'dot err';     // EventSource переподключается сам
+  es.onerror = () => $('#sse-dot').className = 'dot err';
   es.addEventListener('plate', m => onEvent(JSON.parse(m.data)));
 }
 
 async function loadStats(){
-  const s = await (await fetch('/api/stats')).json();
+  const s = await (await fetch('/api/stats?' + new URLSearchParams({ camera: $('#camfilter').value }))).json();
   $('#s-hour').textContent = s.last_hour; $('#s-today').textContent = s.today;
   $('#s-uniq').textContent = s.unique_today; $('#s-total').textContent = s.total;
+  if (!$('#camfilter').value){ state.todayByCam = s.today_by_camera || {}; paintCamStatus(); }
 }
 
 /* ---------- UI ---------- */
+function setSeg(id, v){ $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v)); }
 function seg(id, key){
   $(id).addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return;
-    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-    state[key] = b.dataset.v; startPlayer(); });
+    setSeg(id, b.dataset.v); state[key] = b.dataset.v; render(); });
 }
-seg('#layer', 'layer'); seg('#proto', 'proto');
-$('#fs').onclick = () => video.requestFullscreen?.();
-$('#cam').onchange = () => { state.cam = state.cams.find(c => c.id === $('#cam').value); startPlayer(); loadList(); };
+seg('#view', 'view'); seg('#layer', 'layer'); seg('#proto', 'proto');
+$('#fs').onclick = () => $('#stage').requestFullscreen?.();
+$('#cam').onchange = () => selectCam($('#cam').value);
+$('#grid').onclick = ev => { const t = ev.target.closest('.tile'); if (t) selectCam(t.dataset.cam); };
+$('#cams-body').onclick = ev => { const r = ev.target.closest('tr[data-cam]'); if (r) selectCam(r.dataset.cam); };
 let qTimer; $('#q').oninput = () => { clearTimeout(qTimer); qTimer = setTimeout(loadList, 250); };
-$('#allcams').onchange = loadList;
+$('#camfilter').onchange = () => { loadList(); loadStats(); };
 $('#csv').onclick = () => location.href = '/api/events.csv?' + filterParams();
 $('#list').onclick = ev => {
   const r = ev.target.closest('.row'); if (!r) return; const e = state.events.get(r.dataset.id);
   $('#d-plate').innerHTML = plateHTML(e.plate);
-  $('#d-meta').innerHTML = `${fmtTime(e.ts)} · ${camTitle(e.camera)} · трек #${e.track} · голосов ${e.votes}`;
-  $('#d-car').src = '/snaps/' + e.car_img; $('#dlg').showModal();
+  $('#d-meta').textContent = `${fmtTime(e.ts)} · ${camTitle(e.camera)} · трек #${e.track} · голосов ${e.votes}`;
+  $('#d-car').src = '/snaps/' + encodeURIComponent(e.car_img); $('#dlg').showModal();
 };
 
+async function loadConfig(){
+  const cfg = await (await fetch('/api/config')).json();
+  const ids = cfg.cameras.map(c => c.id).join();
+  $('#cfg-err').classList.toggle('hidden', !cfg.config_error);
+  $('#cfg-err').textContent = cfg.config_error ? 'Ошибка cameras.yml (используется прежняя конфигурация): ' + cfg.config_error : '';
+  if (ids === state.cams.map(c => c.id).join() && state.cams.length) return false;
+  state.cams = cfg.cameras;
+  $('#cam').innerHTML = state.cams.map(c => `<option value="${esc(c.id)}">${esc(c.title)}</option>`).join('');
+  const f = $('#camfilter').value;
+  $('#camfilter').innerHTML = '<option value="">Все камеры</option>' +
+    state.cams.map(c => `<option value="${esc(c.id)}">${esc(c.title)}</option>`).join('');
+  $('#camfilter').value = state.cams.some(c => c.id === f) ? f : '';
+  state.cam = state.cams.find(c => c.id === state.cam?.id) || state.cams[0];
+  if (state.cam) $('#cam').value = state.cam.id;
+  return true;
+}
+
 (async () => {
-  state.cams = (await (await fetch('/api/config')).json()).cameras;
-  $('#cam').innerHTML = state.cams.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
-  state.cam = state.cams[0];
-  startPlayer(); loadList(); loadStats(); connectSSE();
+  const hash = new URLSearchParams(location.hash.slice(1));     // #view=grid&cam=cam2
+  await loadConfig();
+  if (hash.get('cam')) state.cam = state.cams.find(c => c.id === hash.get('cam')) || state.cam;
+  if (hash.get('view') === 'grid'){ state.view = 'grid'; setSeg('#view', 'grid'); }
+  if (state.cam) $('#cam').value = state.cam.id;
+  render(); loadList(); loadStats(); loadCamStatus(); connectSSE();
+  setInterval(loadCamStatus, 5000);
   setInterval(loadStats, 30000);
+  setInterval(async () => { if (await loadConfig()){ render(); loadList(); } }, 20000);  // камеры добавлены/удалены
 })();
 </script>
 </body>

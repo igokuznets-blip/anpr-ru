@@ -1,0 +1,45 @@
+# Шардирование: камеры распределяются между несколькими экземплярами anpr
+# (по одному на GPU или на хост). Модели номера/OCR загружаются один раз на экземпляр.
+#
+#   cp docker-compose.shards.example.yml docker-compose.shards.yml   # и поправьте списки камер
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.shards.yml up -d
+#
+# Каждая камера должна попасть ровно в один шард. Ориентир: YOLOv8n + номер + OCR —
+# ~6–10 камер по 15 FPS на одну GPU уровня RTX 3060; на CPU — 1–2 камеры по 5 FPS.
+services:
+  anpr:                                   # шард 1 — GPU 0
+    environment:
+      ANPR_ONLY: cam1,cam2,cam3,cam4
+      ANPR_SHARD: gpu0
+      ANPR_DEVICE: "0"
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, device_ids: ["0"], capabilities: [gpu]}]
+
+  anpr-gpu1:                              # шард 2 — GPU 1
+    build: {context: ., dockerfile: anpr/Dockerfile}
+    image: ${IMAGE_PREFIX:-anpr-ru}/anpr:${TAG:-latest}
+    depends_on: [mediamtx]
+    env_file: [{path: .env, required: false}]
+    volumes:
+      - ./models:/app/models:ro
+      - ./data:/app/data
+      - ./cameras.yml:/config/cameras.yml:ro
+    environment:
+      ANPR_CAMERAS_FILE: /config/cameras.yml
+      ANPR_ONLY: cam5,cam6,cam7,cam8
+      ANPR_SHARD: gpu1
+      ANPR_SOURCE_TEMPLATE: rtsp://mediamtx:8554/{id}
+      ANPR_OUT_TEMPLATE: rtsp://mediamtx:8554/{id}_anpr
+      ANPR_PLATE_MODEL: /app/models/plate.pt
+      ANPR_CRNN_MODEL: /app/models/crnn.pt
+      ANPR_OCR: ${ANPR_OCR:-easyocr}
+      ANPR_DEVICE: "0"                    # внутри контейнера видна одна GPU
+      ANPR_FPS: ${ANPR_FPS:-15}
+      ANPR_MIN_VOTES: ${ANPR_MIN_VOTES:-3}
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, device_ids: ["1"], capabilities: [gpu]}]
+    restart: unless-stopped

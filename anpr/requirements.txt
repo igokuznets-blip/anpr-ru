@@ -3,3 +3,5 @@ easyocr>=1.7
 opencv-python-headless>=4.9
 pillow>=10
 numpy<2.3
+pyyaml>=6
+lap>=0.5.12          # ByteTrack (иначе ultralytics доустанавливает его из интернета)
