@@ -1,6 +1,6 @@
 # ANPR RU — распознавание номеров РФ в видеопотоке
 
-[![CI](https://github.com/OWNER/anpr-ru/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/anpr-ru/actions/workflows/ci.yml)
+[![CI](https://github.com/igokuznets-blip/anpr-ru/actions/workflows/ci.yml/badge.svg)](https://github.com/igokuznets-blip/anpr-ru/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-green)
 
@@ -45,7 +45,7 @@
 ## Быстрый старт
 
 ```bash
-git clone https://github.com/OWNER/anpr-ru.git && cd anpr-ru
+git clone https://github.com/igokuznets-blip/anpr-ru.git && cd anpr-ru
 make env                        # создаст .env и cameras.yml из шаблонов
 # в cameras.yml опишите камеры, в .env — CAMx_URL и WEBRTC_HOST
 # положите модель детекции номера в models/plate.pt (см. «Обучение»)
@@ -196,7 +196,7 @@ make lint    # ruff
 ```
 
 CI (GitHub Actions) запускает линтер и тесты, собирает образы `web` и `anpr` и публикует их в
-GitHub Container Registry: `ghcr.io/OWNER/anpr-ru/web`, `ghcr.io/OWNER/anpr-ru/anpr`
+GitHub Container Registry: `ghcr.io/igokuznets-blip/anpr-ru/web`, `ghcr.io/igokuznets-blip/anpr-ru/anpr`
 (ветка `main` и теги `v*`).
 
 ## Структура
